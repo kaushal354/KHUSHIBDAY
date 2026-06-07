@@ -252,6 +252,34 @@
             }
         }
 
+        /* Autoplay Hint Tooltip */
+        .autoplay-hint {
+            position: fixed;
+            top: 75px;
+            right: 20px;
+            background: rgba(255, 77, 166, 0.95);
+            backdrop-filter: blur(4px);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            box-shadow: 0 8px 20px rgba(255, 77, 166, 0.35);
+            animation: bounceHint 1.2s infinite alternate ease-in-out;
+            z-index: 10000;
+            pointer-events: none;
+            display: none;
+            border: 1px solid rgba(255,255,255,0.25);
+        }
+        body.night-mode .autoplay-hint {
+            background: rgba(255, 154, 158, 0.95);
+            box-shadow: 0 8px 20px rgba(255, 154, 158, 0.35);
+        }
+        @keyframes bounceHint {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-6px); }
+        }
+
         /* Cursor Hearts */
         .cursor-heart {
             position: absolute; pointer-events: none;
@@ -720,6 +748,7 @@
             #volumeControl:hover { width: 120px; padding-left: 10px; gap: 6px; }
             #volumeSlider { width: 60px; }
             #themeToggle { height: 36px; width: 36px; font-size: 1rem; }
+            .autoplay-hint { top: 56px; right: 10px; font-size: 0.75rem; padding: 6px 12px; }
             .letter-container::before { top: -20px; font-size: 2.2rem; }
             
             .modal-actions {
@@ -826,7 +855,7 @@
         }
     </style>
 </head>
-<body>
+<body class="night-mode">
 
     <!-- Background Music -->
     <audio id="bgMusic" loop autoplay>
@@ -847,8 +876,9 @@
             <span class="volume-icon" onclick="toggleMute()">🔊</span>
             <input type="range" id="volumeSlider" min="0" max="1" step="0.1" value="0.8" oninput="changeVolume(this.value)">
         </div>
-        <button id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">🌙</button>
+        <button id="themeToggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">☀️</button>
     </div>
+    <div id="autoplayHint" class="autoplay-hint">Tap anywhere to play music! 🎵</div>
 
     <div class="bg-shapes">
         <div class="shape"></div>
@@ -905,7 +935,7 @@
         <div class="view" id="view-timeline">
             <div class="timeline-header">
                 <h2>Your Journey 💫</h2>
-                <p style="margin-bottom:0; font-size:0.95rem;">Click on the pulsing dot to unlock our memories!</p>
+                <p style="margin-bottom:0; font-size:0.95rem;">Click on the pulsing dot to unlock your memories!</p>
                 <button id="autoplay-btn" onclick="toggleAutoplay()" class="autoplay-btn">▶️ Play Journey</button>
             </div>
             
@@ -1061,6 +1091,8 @@
                         text.innerText = "Pause Music";
                         btn.classList.add('playing');
                         startFloatingNotes();
+                        const hint = document.getElementById('autoplayHint');
+                        if (hint) hint.style.display = 'none';
                     })
                     .catch(e => {
                         console.log("Audio play blocked by browser:", e);
@@ -1277,11 +1309,13 @@
                     toggleMusic(); // Try starting the music
                 }
                 // Remove listeners once run
-                document.removeEventListener('click', startPlay);
-                document.removeEventListener('touchstart', startPlay);
+                ['click', 'touchstart', 'mousedown', 'keydown', 'pointerdown'].forEach(evt => {
+                    document.removeEventListener(evt, startPlay);
+                });
             };
-            document.addEventListener('click', startPlay);
-            document.addEventListener('touchstart', startPlay);
+            ['click', 'touchstart', 'mousedown', 'keydown', 'pointerdown'].forEach(evt => {
+                document.addEventListener(evt, startPlay);
+            });
         }
 
         window.onload = () => {
@@ -1305,9 +1339,13 @@
                         text.innerText = "Pause Music";
                         btn.classList.add('playing');
                         startFloatingNotes();
+                        const hint = document.getElementById('autoplayHint');
+                        if (hint) hint.style.display = 'none';
                     })
                     .catch(e => {
                         console.log("Autoplay on load blocked by browser security. Playback will start on first user tap/click:", e);
+                        const hint = document.getElementById('autoplayHint');
+                        if (hint) hint.style.display = 'block';
                     });
             }
         };
@@ -1385,12 +1423,12 @@
             const percentage = (currentUnlocked / (erasData.length - 1)) * 100;
             progress.style.width = `${percentage}%`;
 
-            // Transition to Night Mode smoothly midway
-            if(currentUnlocked >= 5) {
-                if (!document.body.classList.contains('night-mode')) {
-                    document.body.classList.add('night-mode');
+            // Transition to Light Mode when reaching Husk Era (index 5) if currently in Dark Mode
+            if(currentUnlocked === 5) {
+                if (document.body.classList.contains('night-mode')) {
+                    document.body.classList.remove('night-mode');
                     const btn = document.getElementById('themeToggle');
-                    if (btn) btn.innerText = "☀️";
+                    if (btn) btn.innerText = "🌙";
                 }
             }
         }
